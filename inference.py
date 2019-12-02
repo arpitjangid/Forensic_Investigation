@@ -12,7 +12,7 @@ cuda = torch.cuda.is_available()
 #data_path = r"/content/drive/My Drive/701_project/FID-300/"
 
 
-def get_feature_vecs(checkpoint_path, network_name, layer_id):
+def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id):
     checkpoint = torch.load(checkpoint_path)
     if(network_name == "resnet18"):
         model = TripletNet(EmbeddingNet_ResNet18(layer_id))
@@ -50,22 +50,43 @@ def find_scores(ref_vec_list, test_vec_list, label_table):
     score_sort = (-score).argsort(1)
 
     pos_array = []
-    for a,b,c in zip(score_sort, score.argmax(1), label_table):
+    for a, c in zip(score_sort, label_table):
         pos_array.append(np.where(a==c)[0][0])
+        # print("match_id ,c", np.where(a==c)[0][0], c)
     pos_array = np.array(pos_array)
 
     t = 5
     thresh = t*len(ref_vec_list)/100 #pos_array.shape[0]/100
-    # thresh = t
     acc = 100*np.sum((pos_array<thresh))/pos_array.shape[0]
     print("top {}%: {}".format(t, acc))
 
+    retreival_5_inds = np.where(pos_array < thresh)[0]
+    score_5 = score_sort[retreival_5_inds][:,:int(thresh)]
+    gts_correct = label_table[retreival_5_inds]
+    score_5 = np.insert(score_5, 0, gts_correct, axis=1)# now first element is gt 
+
     t = 10
     thresh = t*len(ref_vec_list)/100  #pos_array.shape[0]/100
-    # thresh = t
     acc = 100*np.sum((pos_array<thresh))/pos_array.shape[0]
     print("top {}%: {}".format(t, acc))
-    return score, score_sort
+
+    retreival_10_inds = np.where(pos_array < thresh)[0]
+    # print("score_sort ", score_sort.shape)
+    score_10 = score_sort[retreival_10_inds][:,:int(thresh)]
+    gts_correct = label_table[retreival_5_inds][1]
+    score_10 = np.insert(score_10, 0, gts_correct, axis=1)# now first element is gt 
+
+    # print("score_10 ", score_10.shape)
+    return retreival_5_inds, retreival_10_inds, score_sort
+
+
+def add_gt_info(scores, label_map, retreival_inds, thresh):
+    score_thresh = scores[retreival_inds][:,:int(thresh)]
+    ids = label_map[retreival_inds, 0]
+    gts = label_map[retreival_inds, 1]
+    score_thresh = np.insert(score_thresh, 0, gts, axis=1)# now first element is gt 
+    score_thresh = np.insert(score_thresh, 0, ids, axis=1)
+    return score_thresh
 
 
 if __name__ == "__main__":
@@ -82,15 +103,39 @@ if __name__ == "__main__":
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
     # checkpoint_file = "../checkpoints/resnet_18_epoch_{}.pt".format(epoch)
     
-    reference_embeddings, val_embeddings, train_embeddings = get_feature_vecs(checkpoint_file,
+    reference_embeddings, val_embeddings, train_embeddings = get_feature_vecs(data_path, checkpoint_file,
                                                             network_name, layer_id)
     val_embeddings, val_labels = val_embeddings
     train_embeddings, train_labels = train_embeddings
 
-    score, ranked_matches = find_scores(reference_embeddings, train_embeddings, train_labels)
-    print("training data scores: ", score)
+    print("training data results:")
+    retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
+                                                                                train_embeddings, train_labels)
     
-    score, ranked_matches = find_scores(reference_embeddings, val_embeddings, val_labels)
-    print("validation data scores: ", score)
+    label_file = os.path.join(data_path,'label_table_train.csv')
+    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
 
-    print("validation data, ranked matches:", ranked_matches)
+    thresh = 5*len(reference_embeddings)/100
+    ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
+
+    thresh = 10*len(reference_embeddings)/100
+    ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
+
+    np.savetxt('../results/train_inf_5.txt', ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/train_inf_10.txt', ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+
+    print("validation data results:")
+    retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
+                                                                                val_embeddings, val_labels)
+    
+    label_file = os.path.join(data_path,'label_table_val.csv')
+    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+
+    thresh = 5*len(reference_embeddings)/100
+    ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
+    
+    thresh = 10*len(reference_embeddings)/100
+    ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
+
+    np.savetxt('../results/val_inf_5.txt', ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/val_inf_10.txt', ranked_matches_10.astype(int), fmt='%i', delimiter=',')

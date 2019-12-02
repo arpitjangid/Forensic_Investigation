@@ -110,3 +110,21 @@ class TripletNet(nn.Module):
 
     def get_embedding(self, x):
         return self.embedding_net(x)
+
+# class TripletNet_MPCNN(nn.Module):
+#     def __init__(self, embedding_net):
+#         super(TripletNet, self).__init__()
+#         self.embedding_net = embedding_net
+
+#     def get_part_weights(self, x1):
+#         pass
+#     def forward(self, x1, x2, x3):
+#         W = self.get_part_weights(x1) # shape?
+
+#         output1 = self.embedding_net_MPCNN(x1, W)
+#         output2 = self.embedding_net_MPCNN(x2, W)
+#         output3 = self.embedding_net_MPCNN(x3, W)
+#         return output1, output2, output3
+
+#     def get_embedding(self, x):
+#         return self.embedding_net(x)

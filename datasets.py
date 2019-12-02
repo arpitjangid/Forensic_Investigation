@@ -41,6 +41,7 @@ class TripletFID(Dataset):
             triplet = [i, positive_ind, negative_ind]
             triplets.append(triplet)
         self.triplets = triplets
+        
 
     def __getitem__(self, index):
         img1 = self.probe_images[self.triplets[index][0]]
