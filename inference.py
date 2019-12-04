@@ -6,7 +6,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from networks import *
 from siamese_fid300 import extract_embeddings
 import os
-
 cuda = torch.cuda.is_available()
 # mean, std = 0.1307, 0.3081
 #data_path = r"/content/drive/My Drive/701_project/FID-300/"
@@ -92,13 +91,14 @@ def add_gt_info(scores, label_map, retreival_inds, thresh):
 if __name__ == "__main__":
     data_path = "../data/FID-300/"
 
-    # network_name = "resnet50"
-    network_name = "resnet18"
-    epoch = 80
-    layer_id = 6
-    # checkpoint_path = "../checkpoints_full_resnet50_layerid5/"
-    # checkpoint_path = "../checkpoints_full_resnet50_aug/"
-    checkpoint_path = "../checkpoints_full_resnet18_fixed/"
+    network_name = "resnet50"
+    layer_id = 5
+    # network_name = "resnet18"
+    # layer_id = 6
+    epoch = 70
+    
+    checkpoint_path = "../checkpoints_full_resnet50/"
+    # checkpoint_path = "../checkpoints_full_resnet18_fixed/"
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
     # checkpoint_file = "../checkpoints/resnet_18_epoch_{}.pt".format(epoch)
@@ -121,8 +121,8 @@ if __name__ == "__main__":
     thresh = 10*len(reference_embeddings)/100
     ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
 
-    np.savetxt('../results/train_inf_5.txt', ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    np.savetxt('../results/train_inf_10.txt', ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/train_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/train_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
 
     print("validation data results:")
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
@@ -137,5 +137,5 @@ if __name__ == "__main__":
     thresh = 10*len(reference_embeddings)/100
     ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
 
-    np.savetxt('../results/val_inf_5.txt', ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    np.savetxt('../results/val_inf_10.txt', ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/val_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/val_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')

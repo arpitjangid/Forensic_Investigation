@@ -1,8 +1,7 @@
 import torch
 import numpy as np
 import os
-import matplotlib.pyplot as plt
-
+# import matplotlib.pyplot as plt
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, 
         log_interval, checkpoint_path, save_freq, plot_name, metrics=[], start_epoch=0):
     """
@@ -58,14 +57,13 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         '''
     
-    # fig, ax = plt.subplot()
-    x = np.arange(1,len(train_loss_vec)+1)
-    plt.plot(x,train_loss_vec,'b*-')
-    plt.plot(x,val_loss_vec,'r*-')
-    plt.legend(['train loss', "validation loss"])
-    plt.xlabel('epochs')
-    plt.ylabel('loss')
-    plt.savefig(plot_name)
+    # x = np.arange(1,len(train_loss_vec)+1)
+    # plt.plot(x,train_loss_vec,'b*-')
+    # plt.plot(x,val_loss_vec,'r*-')
+    # plt.legend(['train loss', "validation loss"])
+    # plt.xlabel('epochs')
+    # plt.ylabel('loss')
+    # plt.savefig(plot_name)
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
     for metric in metrics:

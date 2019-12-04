@@ -3,21 +3,17 @@
 import numpy as np
 import torch
 import os
-
 from datasets import FID300, TripletFID
 from torchvision import transforms
 from torch.optim import lr_scheduler
 import torch.optim as optim
+
 from torch.autograd import Variable
 from trainer import fit
 from networks import * 
 from losses import TripletLoss
 
 cuda = torch.cuda.is_available()
-
-# %matplotlib inline
-import matplotlib
-import matplotlib.pyplot as plt
 
 def extract_embeddings(dataloader, model, if_probe=False):
     with torch.no_grad():
@@ -67,10 +63,12 @@ if __name__ == "__main__":
 
     
     margin = 0.3 #1.
-    layer_id = 6
-    embedding_net = EmbeddingNet_ResNet18(layer_id)
+    # layer_id = 6
+    # embedding_net = EmbeddingNet_ResNet18(layer_id)
     # layer_id = 5
-    # embedding_net = EmbeddingNet(network_name='resnet50', layer_id=5)
+    # network_name='resnet50'
+    network_name='vgg19'
+    embedding_net = EmbeddingNet(network_name=network_name, layer_id=5)
     model = TripletNet(embedding_net)
     if cuda:
         model.cuda()
@@ -89,13 +87,13 @@ if __name__ == "__main__":
     scheduler = lr_scheduler.StepLR(optimizer, 10, gamma=0.1, last_epoch=-1)
     n_epochs = 150
     log_interval = 100
-    checkpoint_path = "../checkpoints_full_resnet18_fixed/"
-    # checkpoint_path = "../checkpoints_vgg19/"
+    # checkpoint_path = "../checkpoints_full_resnet50/"
+    checkpoint_path = "../checkpoints_vgg19/"
     if(not os.path.exists(checkpoint_path)):
         os.makedirs(checkpoint_path)
     save_freq = 5
-    plot_name = "../loss_curves/resnet50_aug_fixed.png"
-    # plot_name = "loss_vgg19.png"
+    # plot_name = "../loss_curves/resnet50_full.png"
+    plot_name = "../loss_curves/loss_vgg19.png"
     # if(resume_tranining):
     #     checkpoint = torch.load(checkpoint_path+)
     #     model.load_state_dict(checkpoint['model_state_dict'])
