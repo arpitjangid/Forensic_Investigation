@@ -17,7 +17,11 @@ class TripletFID(Dataset):
     def __init__(self, fid_dataset):
         self.fid_dataset = fid_dataset
         self.train = self.fid_dataset.train
-        self.transform = self.fid_dataset.transform
+        # self.transform = self.fid_dataset.transform
+        
+        self.transform_ref = self.fid_dataset.transform_ref
+        self.transform_probe = self.fid_dataset.transform_probe
+        
         self.num_reference = self.fid_dataset.num_reference
         self.reference_filenames = self.fid_dataset.reference_filenames
         self.labels = self.fid_dataset.labels
@@ -48,16 +52,14 @@ class TripletFID(Dataset):
         img2 = self.reference_images[self.triplets[index][1]]
         img3 = self.reference_images[self.triplets[index][2]]
 
-        # img1 = Image.fromarray(np.array(img1), mode='L')
-        # img2 = Image.fromarray(np.array(img2), mode='L')
-        # img3 = Image.fromarray(np.array(img3), mode='L')
         img1 = Image.fromarray(np.array(img1), mode='RGB')
         img2 = Image.fromarray(np.array(img2), mode='RGB')
         img3 = Image.fromarray(np.array(img3), mode='RGB')
-        if self.transform is not None:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
-            img3 = self.transform(img3)
+        if self.transform_probe is not None:
+            img1 = self.transform_probe(img1)
+        if self.transform_ref is not None:
+            img2 = self.transform_ref(img2)
+            img3 = self.transform_ref(img3)
         return (img1, img2, img3), []
 
     def __len__(self):
@@ -85,7 +87,13 @@ class FID300(Dataset):
         self.reference_filenames = []
         self.probe_filenames = []
         self.root = root
-        self.transform = transform
+        # self.transform = transform
+        if train:
+            self.transform_ref = transform[0]
+            self.transform_probe = transform[1]
+        else:
+            self.transform_ref = transform
+            self.transform_probe = transform
         self.train = train # train set or test set
         # self.num_reference = None
 
@@ -112,11 +120,7 @@ class FID300(Dataset):
         probe_flist = [os.path.join(probe_dir,probe_file) for probe_file in probe_flist]
 
         label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
-        # label_map = loadmat(label_file)
-        # label_map = label_map['label_table'].astype(int)
-
-        # print("len probe_flist",len(probe_flist))
-        # print("len label_map",len(label_map))
+        
         for i in range(len(probe_flist)):
             self.probe_filenames.append((probe_flist[i],label_map[i,1])) # filename and ref file_id pair
         # if preload dataset into memory
@@ -159,14 +163,14 @@ class FID300(Dataset):
             image = self.probe_images[index]
             label = self.labels[index]
             # ref_image = self.reference_images[label-1]
-            if self.transform is not None:
-                image = self.transform(image)
+            if self.transform_probe is not None:
+                image = self.transform_probe(image)
             # return image and label
             return image, label
         else: # output reference images
             ref_image = self.reference_images[index]
-            if self.transform is not None:
-                ref_image = self.transform(ref_image)
+            if self.transform_ref is not None:
+                ref_image = self.transform_ref(ref_image)
             # return image and label
             return ref_image
         

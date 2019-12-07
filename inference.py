@@ -137,8 +137,6 @@ if __name__ == "__main__":
     checkpoint_path = "../checkpoints_resnet18/"
     epoch = 40
     
-    
-    
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
     # checkpoint_file = "../checkpoints/resnet_18_epoch_{}.pt".format(epoch)

@@ -38,19 +38,34 @@ def extract_embeddings(dataloader, model, if_probe=False):
               k += len(images)
           return embeddings
 
+def get_transforms():
+    # transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
+    #             transforms.Normalize(mean, std)])
+    # transform_train = transforms.Compose([transforms.Resize((224,112)), transforms.RandomHorizontalFlip(),
+    #                 transforms.ToTensor(),
+    #                 transforms.Normalize(mean, std)])
+
+    transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), transforms.Normalize(mean, std)])
+    transform_train_ref = transforms.Compose([transforms.Resize((256,128)), transforms.RandomCrop((224,112)), 
+                      transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
+    transform_train_probe = transforms.Compose([transforms.Resize((256,128)), transforms.RandomRotation((-20, 20)), transforms.RandomCrop((224,112)), 
+                      transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
+    
+    return transform_val, transform_train_ref, transform_train_probe
+
 if __name__ == "__main__":
     data_path = "../data/FID-300/"
     mean=[0.485, 0.456, 0.406]
     std=[0.229, 0.224, 0.225]
 
-    # transform = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor()])
-    transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
-                transforms.Normalize(mean, std)])
-    transform_train = transforms.Compose([transforms.Resize((224,112)), transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean, std)])
+    transform_val, transform_train_ref, transform_train_probe = get_transforms()
+   
+    
     #  transforms.RandomRotation(degrees=(-20,20)),
-    train_dataset = FID300(data_path, train = True, transform = transform_train, with_aug= False)
+    # train_dataset = FID300(data_path, train = True, transform = transform_train, with_aug= False)
+    # val_dataset = FID300(data_path, train = False, transform = transform_val)
+    ## add different transforms for reference and croo images
+    train_dataset = FID300(data_path, train = True, transform = [transform_train_ref, transform_train_probe], with_aug= False)
     val_dataset = FID300(data_path, train = False, transform = transform_val)
 
     triplet_train_dataset = TripletFID(train_dataset) # Returns pairs of images and target same/different
@@ -65,9 +80,9 @@ if __name__ == "__main__":
     margin = 0.3 #1.
     # layer_id = 6
     # embedding_net = EmbeddingNet_ResNet18(layer_id)
-    # layer_id = 5
-    # network_name='resnet50'
-    network_name='vgg19'
+    layer_id = 5
+    network_name='resnet50'
+    # network_name='vgg19'
     embedding_net = EmbeddingNet(network_name=network_name, layer_id=5)
     model = TripletNet(embedding_net)
     if cuda:
@@ -85,15 +100,15 @@ if __name__ == "__main__":
     #         ], lr=lr, momentum=0.9)
     
     scheduler = lr_scheduler.StepLR(optimizer, 10, gamma=0.1, last_epoch=-1)
-    n_epochs = 150
+    n_epochs = 100
     log_interval = 100
-    # checkpoint_path = "../checkpoints_full_resnet50/"
-    checkpoint_path = "../checkpoints_vgg19/"
+    checkpoint_path = "../checkpoints_resnet50_transforms/"
+    # checkpoint_path = "../checkpoints_vgg19/"
     if(not os.path.exists(checkpoint_path)):
         os.makedirs(checkpoint_path)
-    save_freq = 5
-    # plot_name = "../loss_curves/resnet50_full.png"
-    plot_name = "../loss_curves/loss_vgg19.png"
+    save_freq = 10
+    plot_name = "../loss_curves/resnet50_transform.png"
+    # plot_name = "../loss_curves/loss_vgg19.png"
     # if(resume_tranining):
     #     checkpoint = torch.load(checkpoint_path+)
     #     model.load_state_dict(checkpoint['model_state_dict'])
