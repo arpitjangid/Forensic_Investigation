@@ -2,6 +2,7 @@ import numpy as np
 import os
 import shutil 
 import skimage.io
+import skimage.transform
 # from PIL import Image
 
 if __name__ == "__main__":

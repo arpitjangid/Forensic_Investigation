@@ -7,6 +7,7 @@ from networks import *
 from siamese_fid300 import extract_embeddings
 import os
 import argparse
+from scipy.io import loadmat
 
 cuda = torch.cuda.is_available()
 # mean, std = 0.1307, 0.3081
@@ -25,7 +26,7 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id):
         model.cuda()
     batch_size = 32
     kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
-    transform = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
+    transform = transforms.Compose([transforms.Resize((224,224)), transforms.ToTensor(), 
                         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
 
@@ -49,7 +50,41 @@ def find_scores(ref_vec_list, test_vec_list, label_table):
         dist_from_ref = np.linalg.norm(ref_vec_list-test_vec, axis=1)**2 # as in loss, using sq distance
         l2_dist_vec.append(dist_from_ref)
     l2_dist_vec = np.stack(l2_dist_vec)
-    score_sort = l2_dist_vec.argsort(1)
+  
+    data_path = "../data/FID-300/"
+    divided_data_path = os.path.join(data_path, "divided")
+
+    label_file = os.path.join(data_path,'label_table_train.csv')
+    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+    label_file = os.path.join(divided_data_path,'label_table_train.csv')
+    div_label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+
+    label_table = loadmat('../data/FID-300/label_table.mat')
+    label_table = label_table['label_table']
+    label_table = label_table[:, 1]
+
+    # print("len(div_label_map) = {}".format(len(div_label_map)))
+
+    div_lhs = div_label_map[:, 0]
+    lhs = label_map[:, 0]
+
+    scores = np.zeros((len(div_label_map), 1175))
+    
+    # DIstance from upper/Lower shoe features
+    du = l2_dist_vec.reshape(-1, int(l2_dist_vec.shape[1]/2), 2)[:, :, 0]
+    dl = l2_dist_vec.reshape(-1, int(l2_dist_vec.shape[1]/2), 2)[:, :, 1]
+
+    count = 0
+    for i, l in enumerate(lhs):
+        if 2*l not in div_lhs:
+            scores[i] = du[count]
+            count+=1
+        else:
+            scores[i] = np.maximum(du[count], dl[count+1])
+    score_sort = scores.argsort(1)
+
+    print("score_sort.shape = {}".format(score_sort.shape))
+    print("label_table.shape = {}".format(label_table.shape))
 
     pos_array = []
     for a, c in zip(score_sort, label_table):
@@ -129,13 +164,10 @@ def add_gt_info(scores, label_map, retreival_inds, thresh):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--divided', dest='divided', action='store_true')
-    args = parser.parse_args()
-    if args.divided:
-        data_path = "../data/FID-300/divided"
-    else:
-        data_path = "../data/FID-300/"
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--divided', dest='divided', action='store_true')
+    # args = parser.parse_args()
+    data_path = "../data/FID-300/divided"
 
     network_name = "resnet50"
     layer_id = 5

@@ -60,7 +60,7 @@ class EmbeddingNet(nn.Module):
             modules = list(model.children())[:layer_id] 
             self.net_base = nn.Sequential(*modules)
             if(layer_id == 5):
-                self.fc = nn.Linear(256*56*28, 128)
+                self.fc = nn.Linear(256*56*28*2, 128)
                 # self.fc = nn.Sequential(nn.Linear(256*56*28, 1024),
                 #                     nn.ReLU(),
                 #                     nn.Linear(1024, 128))
