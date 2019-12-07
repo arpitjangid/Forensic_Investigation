@@ -27,9 +27,13 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id):
                         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
 
-    train_probe_dataset = FID300(data_path, get_probe=True, train=True, transform=transform)
+    # train_probe_dataset = FID300(data_path, get_probe=True, train=True, transform=transform)
+    # val_probe_dataset = FID300(data_path, get_probe=True, train=False, transform=transform)
+    # ref_dataset = FID300(data_path, get_probe=False, transform=transform)
+
+    train_probe_dataset = FID300(data_path, get_probe=True, train=True, transform=[transform, transform])
     val_probe_dataset = FID300(data_path, get_probe=True, train=False, transform=transform)
-    ref_dataset = FID300(data_path, get_probe=False, transform=transform)
+    ref_dataset = FID300(data_path, get_probe=False, train=False, transform=transform)
 
     train_probe_loader = torch.utils.data.DataLoader(train_probe_dataset, batch_size=batch_size, shuffle=False, **kwargs)
     val_probe_loader = torch.utils.data.DataLoader(val_probe_dataset, batch_size=batch_size, shuffle=False, **kwargs)
@@ -129,13 +133,14 @@ def add_gt_info(scores, label_map, retreival_inds, thresh):
 if __name__ == "__main__":
     data_path = "../data/FID-300/"
 
-    # network_name = "resnet50"
-    # layer_id = 5
-    # checkpoint_path = "../checkpoints_resnet50/"
-    network_name = "resnet18"
-    layer_id = 6
-    checkpoint_path = "../checkpoints_resnet18/"
-    epoch = 40
+    network_name = "resnet50"
+    layer_id = 5
+    checkpoint_path = "../checkpoints_resnet50_transforms/" 
+    #"../checkpoints_resnet50/"
+    # network_name = "resnet18"
+    # layer_id = 6
+    # checkpoint_path = "../checkpoints_resnet18/"
+    epoch = 20
     
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
@@ -150,30 +155,30 @@ if __name__ == "__main__":
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
                                                                                 train_embeddings, train_labels)
     
-    label_file = os.path.join(data_path,'label_table_train.csv')
-    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+    # label_file = os.path.join(data_path,'label_table_train.csv')
+    # label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
 
-    thresh = 5*len(reference_embeddings)/100
-    ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
+    # thresh = 5*len(reference_embeddings)/100
+    # ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
 
-    thresh = 10*len(reference_embeddings)/100
-    ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
+    # thresh = 10*len(reference_embeddings)/100
+    # ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
 
-    np.savetxt('../results/train_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    np.savetxt('../results/train_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    # np.savetxt('../results/train_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    # np.savetxt('../results/train_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
 
     print("validation data results:")
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
                                                                                 val_embeddings, val_labels)
     
-    label_file = os.path.join(data_path,'label_table_val.csv')
-    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+    # label_file = os.path.join(data_path,'label_table_val.csv')
+    # label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
 
-    thresh = 5*len(reference_embeddings)/100
-    ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
+    # thresh = 5*len(reference_embeddings)/100
+    # ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
     
-    thresh = 10*len(reference_embeddings)/100
-    ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
+    # thresh = 10*len(reference_embeddings)/100
+    # ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
 
-    np.savetxt('../results/val_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    np.savetxt('../results/val_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    # np.savetxt('../results/val_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    # np.savetxt('../results/val_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
