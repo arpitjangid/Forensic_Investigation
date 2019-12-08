@@ -97,6 +97,17 @@ def add_gt_info(scores, label_map, retreival_inds, thresh):
     return score_thresh
 
 
+def save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, split):
+    label_file = os.path.join(data_path,label_fname)
+    label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+    thresh = 5*len(reference_embeddings)/100
+    ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
+    thresh = 10*len(reference_embeddings)/100
+    ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
+    np.savetxt('../results/{}_inf_5_{}_{}.txt'.format(split, network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
+    np.savetxt('../results/{}_inf_10_{}_{}.txt'.format(split, network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    pass
+
 if __name__ == "__main__":
     # data_path = "../data/FID-300/"
 
@@ -124,8 +135,6 @@ if __name__ == "__main__":
     # checkpoint_path = "../checkpoints_resnet18/"
     epoch = 40
     
-    
-    
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
     # checkpoint_file = "../checkpoints/resnet_18_epoch_{}.pt".format(epoch)
@@ -139,30 +148,12 @@ if __name__ == "__main__":
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
                                                                                 train_embeddings, train_labels)
     
-    # label_file = os.path.join(data_path,'label_table_train.csv')
-    # label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
-
-    # thresh = 5*len(reference_embeddings)/100
-    # ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
-
-    # thresh = 10*len(reference_embeddings)/100
-    # ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
-
-    # np.savetxt('../results/train_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    # np.savetxt('../results/train_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
-
+    # label_fname = 'label_table_train.csv'
+    # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'train')
+    
     print("validation data results:")
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings, 
                                                                                 val_embeddings, val_labels)
     
-    # label_file = os.path.join(data_path,'label_table_val.csv')
-    # label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
-
-    # thresh = 5*len(reference_embeddings)/100
-    # ranked_matches_5 = add_gt_info(scores, label_map, retreival_5_inds, thresh)
-    
-    # thresh = 10*len(reference_embeddings)/100
-    # ranked_matches_10 = add_gt_info(scores, label_map, retreival_10_inds, thresh)
-
-    # np.savetxt('../results/val_inf_5_{}_{}.txt'.format(network_name,epoch), ranked_matches_5.astype(int), fmt='%i', delimiter=',')
-    # np.savetxt('../results/val_inf_10_{}_{}.txt'.format(network_name,epoch), ranked_matches_10.astype(int), fmt='%i', delimiter=',')
+    # label_fname = 'label_table_val.csv'
+    # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'val')
