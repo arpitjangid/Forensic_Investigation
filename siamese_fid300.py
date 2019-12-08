@@ -38,27 +38,29 @@ def extract_embeddings(dataloader, model, if_probe=False):
               k += len(images)
           return embeddings
 
-def get_transforms():
-    # transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
-    #             transforms.Normalize(mean, std)])
-    # transform_train = transforms.Compose([transforms.Resize((224,112)), transforms.RandomHorizontalFlip(),
-    #                 transforms.ToTensor(),
-    #                 transforms.Normalize(mean, std)])
-
-    transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), transforms.Normalize(mean, std)])
-    transform_train_ref = transforms.Compose([transforms.Resize((256,128)), transforms.RandomCrop((224,112)), 
-                      transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
-    transform_train_probe = transforms.Compose([transforms.Resize((256,128)), transforms.RandomRotation((-20, 20)), transforms.RandomCrop((224,112)), 
-                      transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
+def get_transforms(transform_method=1):
+    if(transform_method == 1):
+        transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
+                    transforms.Normalize(mean, std)])
+        transform_train = transforms.Compose([transforms.Resize((224,112)), transforms.RandomHorizontalFlip(),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean, std)])
+        return transform_val, transform_train, transform_train
+    else:
+        transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), transforms.Normalize(mean, std)])
+        transform_train_ref = transforms.Compose([transforms.Resize((256,128)), transforms.RandomCrop((224,112)), 
+                        transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
+        transform_train_probe = transforms.Compose([transforms.Resize((256,128)), transforms.RandomRotation((-20, 20)), transforms.RandomCrop((224,112)), 
+                        transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
     
-    return transform_val, transform_train_ref, transform_train_probe
+        return transform_val, transform_train_ref, transform_train_probe
 
 if __name__ == "__main__":
     data_path = "../data/FID-300/"
     mean=[0.485, 0.456, 0.406]
     std=[0.229, 0.224, 0.225]
-
-    transform_val, transform_train_ref, transform_train_probe = get_transforms()
+    transform_method = 1
+    transform_val, transform_train_ref, transform_train_probe = get_transforms(transform_method=transform_method)
    
     
     #  transforms.RandomRotation(degrees=(-20,20)),
@@ -102,7 +104,7 @@ if __name__ == "__main__":
     scheduler = lr_scheduler.StepLR(optimizer, 10, gamma=0.1, last_epoch=-1)
     n_epochs = 100
     log_interval = 100
-    checkpoint_path = "../checkpoints_resnet50_transforms/"
+    checkpoint_path = "../checkpoints_resnet50_labelfix/"
     # checkpoint_path = "../checkpoints_vgg19/"
     if(not os.path.exists(checkpoint_path)):
         os.makedirs(checkpoint_path)

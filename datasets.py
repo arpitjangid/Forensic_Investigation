@@ -48,9 +48,9 @@ class TripletFID(Dataset):
         
 
     def __getitem__(self, index):
-        img1 = self.probe_images[self.triplets[index][0]]
-        img2 = self.reference_images[self.triplets[index][1]]
-        img3 = self.reference_images[self.triplets[index][2]]
+        img1 = self.probe_images[self.triplets[index][0]] # anchor
+        img2 = self.reference_images[self.triplets[index][1]] # positive
+        img3 = self.reference_images[self.triplets[index][2]] #negative
 
         img1 = Image.fromarray(np.array(img1), mode='RGB')
         img2 = Image.fromarray(np.array(img2), mode='RGB')
@@ -88,15 +88,14 @@ class FID300(Dataset):
         self.probe_filenames = []
         self.root = root
         # self.transform = transform
-        if train:
+        self.train = train # train set or test set
+        if self.train:
             self.transform_ref = transform[0]
             self.transform_probe = transform[1]
         else:
             self.transform_ref = transform
             self.transform_probe = transform
-        self.train = train # train set or test set
-        # self.num_reference = None
-
+        
         self.get_probe = get_probe
         # self.get_ref = get_ref
 
@@ -117,10 +116,12 @@ class FID300(Dataset):
             label_file = os.path.join(root,'label_table_val.csv')
         probe_flist = os.listdir(probe_dir)
         probe_flist.sort()
-        probe_flist = [os.path.join(probe_dir,probe_file) for probe_file in probe_flist]
+        probe_flist = [os.path.join(probe_dir, probe_file) for probe_file in probe_flist]
 
-        label_map = np.loadtxt(label_file,delimiter=',',dtype='int')
+        label_map = np.loadtxt(label_file, delimiter=',', dtype='int')
+        label_map[:,1] -= 1 # making the map to range [0,1174], 
         
+        # probe_flist is in sorted order
         for i in range(len(probe_flist)):
             self.probe_filenames.append((probe_flist[i],label_map[i,1])) # filename and ref file_id pair
         # if preload dataset into memory

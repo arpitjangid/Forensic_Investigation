@@ -51,7 +51,10 @@ def find_scores(ref_vec_list, test_vec_list, label_table):
         dist_from_ref = np.linalg.norm(ref_vec_list-test_vec, axis=1)**2 # as in loss, using sq distance
         l2_dist_vec.append(dist_from_ref)
     l2_dist_vec = np.stack(l2_dist_vec)
+    # label_table -= 1 # commented as now handled in dataset.py
     score_sort = l2_dist_vec.argsort(1)
+    # print("range label_table:", min(label_table), max(label_table))
+    # print("range score_sort:", min(score_sort.ravel()), max(score_sort.ravel()))
 
     pos_array = []
     for a, c in zip(score_sort, label_table):
@@ -83,44 +86,6 @@ def find_scores(ref_vec_list, test_vec_list, label_table):
     # print("score_10 ", score_10.shape)
     return retreival_5_inds, retreival_10_inds, score_sort
 
-# def find_scores_cosine(ref_vec_list, test_vec_list, label_table):
-    
-#     #cosine similarity code
-#     test_vec_list = (test_vec_list-test_vec_list.mean(1)[:, None])/test_vec_list.std(1)[:, None]
-#     ref_vec_list = (ref_vec_list-ref_vec_list.mean(1)[:, None])/ref_vec_list.std(1)[:, None]
-#     score = cosine_similarity(test_vec_list, ref_vec_list)
-#     score_sort = (-score).argsort(1)
-#     pos_array = []
-#     for a, c in zip(score_sort, label_table):
-#         pos_array.append(np.where(a==c)[0][0])
-#         # print("match_id ,c", np.where(a==c)[0][0], c)
-#     pos_array = np.array(pos_array)
-
-#     t = 5
-#     thresh = t*len(ref_vec_list)/100 #pos_array.shape[0]/100
-#     acc = 100*np.sum((pos_array<thresh))/pos_array.shape[0]
-#     print("top {}%: {}".format(t, acc))
-
-#     retreival_5_inds = np.where(pos_array < thresh)[0]
-#     score_5 = score_sort[retreival_5_inds][:,:int(thresh)]
-#     gts_correct = label_table[retreival_5_inds]
-#     score_5 = np.insert(score_5, 0, gts_correct, axis=1)# now first element is gt 
-
-#     t = 10
-#     thresh = t*len(ref_vec_list)/100  #pos_array.shape[0]/100
-#     acc = 100*np.sum((pos_array<thresh))/pos_array.shape[0]
-#     print("top {}%: {}".format(t, acc))
-
-#     retreival_10_inds = np.where(pos_array < thresh)[0]
-#     # print("score_sort ", score_sort.shape)
-#     score_10 = score_sort[retreival_10_inds][:,:int(thresh)]
-#     gts_correct = label_table[retreival_5_inds][1]
-#     score_10 = np.insert(score_10, 0, gts_correct, axis=1)# now first element is gt 
-
-#     # print("score_10 ", score_10.shape)
-#     return retreival_5_inds, retreival_10_inds, score_sort
-
-
 def add_gt_info(scores, label_map, retreival_inds, thresh):
     score_thresh = scores[retreival_inds][:,:int(thresh)]
     ids = label_map[retreival_inds, 0]
@@ -135,12 +100,12 @@ if __name__ == "__main__":
 
     network_name = "resnet50"
     layer_id = 5
-    checkpoint_path = "../checkpoints_resnet50_transforms/" 
-    #"../checkpoints_resnet50/"
+    checkpoint_path = "../checkpoints_resnet50_labelfix/" 
+    # checkpoint_path = "../checkpoints_resnet50/"
     # network_name = "resnet18"
     # layer_id = 6
     # checkpoint_path = "../checkpoints_resnet18/"
-    epoch = 20
+    epoch = 50
     
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
@@ -148,7 +113,7 @@ if __name__ == "__main__":
     
     reference_embeddings, val_embeddings, train_embeddings = get_feature_vecs(data_path, checkpoint_file,
                                                             network_name, layer_id)
-    val_embeddings, val_labels = val_embeddings
+    val_embeddings, val_labels = val_embeddings # dataloader is handling index 
     train_embeddings, train_labels = train_embeddings
 
     print("training data results:")

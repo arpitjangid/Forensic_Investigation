@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import os
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, 
         log_interval, checkpoint_path, save_freq, plot_name, metrics=[], start_epoch=0):
     """
