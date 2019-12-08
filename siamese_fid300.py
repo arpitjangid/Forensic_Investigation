@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from trainer import fit
 from networks import * 
 from losses import TripletLoss
+import argparse
 
 cuda = torch.cuda.is_available()
 
@@ -56,7 +57,14 @@ def get_transforms(transform_method=1):
         return transform_val, transform_train_ref, transform_train_probe
 
 if __name__ == "__main__":
-    data_path = "../data/FID-300/"
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--divided', dest='divided', action='store_true')
+    # args = parser.parse_args()
+
+    # if args.divided:
+    data_path = "../data/FID-300/divided"
+    # else:
+    #     data_path = "../data/FID-300/"
     mean=[0.485, 0.456, 0.406]
     std=[0.229, 0.224, 0.225]
     transform_method = 1
@@ -104,7 +112,7 @@ if __name__ == "__main__":
     scheduler = lr_scheduler.StepLR(optimizer, 10, gamma=0.1, last_epoch=-1)
     n_epochs = 100
     log_interval = 100
-    checkpoint_path = "../checkpoints_resnet50_labelfix/"
+    checkpoint_path = "../checkpoints_full_resnet50/"
     # checkpoint_path = "../checkpoints_vgg19/"
     if(not os.path.exists(checkpoint_path)):
         os.makedirs(checkpoint_path)
@@ -114,6 +122,11 @@ if __name__ == "__main__":
     # if(resume_tranining):
     #     checkpoint = torch.load(checkpoint_path+)
     #     model.load_state_dict(checkpoint['model_state_dict'])
+    plot_name = "../loss_curves/resnet50_full.png"
+    # plot_name = "../loss_curves/loss_vgg19.png"
+
+    checkpoint = torch.load(checkpoint_path+"epoch_20.pt")
+    model.load_state_dict(checkpoint['model_state_dict'])
 
     fit(triplet_train_loader, triplet_val_loader, model, loss_fn, optimizer, 
                     scheduler, n_epochs, cuda, log_interval, checkpoint_path, save_freq, plot_name)
