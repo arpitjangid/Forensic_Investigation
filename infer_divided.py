@@ -62,9 +62,7 @@ def find_scores(ref_vec_list, test_vec_list, label_table):
     label_table = loadmat('../data/FID-300/label_table.mat')
     label_table = label_table['label_table']
     label_table = label_table[:, 1]
-
-    # print("len(div_label_map) = {}".format(len(div_label_map)))
-
+    
     div_lhs = div_label_map[:, 0]
     lhs = label_map[:, 0]
 

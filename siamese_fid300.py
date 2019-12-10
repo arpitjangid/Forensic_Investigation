@@ -39,16 +39,16 @@ def extract_embeddings(dataloader, model, if_probe=False):
               k += len(images)
           return embeddings
 
-def get_transforms(transform_method=1):
+def get_transforms(transform_method=1, transform_size=(224, 112)):
     if(transform_method == 1):
-        transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), 
+        transform_val = transforms.Compose([transforms.Resize(transform_size), transforms.ToTensor(), 
                     transforms.Normalize(mean, std)])
-        transform_train = transforms.Compose([transforms.Resize((224,112)), transforms.RandomHorizontalFlip(),
+        transform_train = transforms.Compose([transforms.Resize(transform_size), transforms.RandomHorizontalFlip(),
                         transforms.ToTensor(),
                         transforms.Normalize(mean, std)])
         return transform_val, transform_train, transform_train
     else:
-        transform_val = transforms.Compose([transforms.Resize((224,112)), transforms.ToTensor(), transforms.Normalize(mean, std)])
+        transform_val = transforms.Compose([transforms.Resize(x), transforms.ToTensor(), transforms.Normalize(mean, std)])
         transform_train_ref = transforms.Compose([transforms.Resize((256,128)), transforms.RandomCrop((224,112)), 
                         transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean, std)])
         transform_train_probe = transforms.Compose([transforms.Resize((256,128)), transforms.RandomRotation((-20, 20)), transforms.RandomCrop((224,112)), 
@@ -57,18 +57,23 @@ def get_transforms(transform_method=1):
         return transform_val, transform_train_ref, transform_train_probe
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--divided', dest='divided', action='store_true')
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--divided', dest='divided', action='store_true')
+    args = parser.parse_args()
 
-    # if args.divided:
-    data_path = "../data/FID-300/divided"
-    # else:
-    #     data_path = "../data/FID-300/"
+    if args.divided:
+        data_path = "../data/FID-300/divided"
+    else:
+        data_path = "../data/FID-300/"
     mean=[0.485, 0.456, 0.406]
     std=[0.229, 0.224, 0.225]
     transform_method = 1
-    transform_val, transform_train_ref, transform_train_probe = get_transforms(transform_method=transform_method)
+    if args.divided:
+        transform_size = (224, 224)
+    else:
+        transform_size = (224, 112)
+    transform_val, transform_train_ref, transform_train_probe = get_transforms(
+        transform_method=transform_method, transform_size=transform_size)
    
     
     #  transforms.RandomRotation(degrees=(-20,20)),
@@ -125,8 +130,8 @@ if __name__ == "__main__":
     plot_name = "../loss_curves/resnet50_full.png"
     # plot_name = "../loss_curves/loss_vgg19.png"
 
-    checkpoint = torch.load(checkpoint_path+"epoch_20.pt")
-    model.load_state_dict(checkpoint['model_state_dict'])
+    #checkpoint = torch.load(checkpoint_path+"epoch_20.pt")
+    #model.load_state_dict(checkpoint['model_state_dict'])
 
     fit(triplet_train_loader, triplet_val_loader, model, loss_fn, optimizer, 
                     scheduler, n_epochs, cuda, log_interval, checkpoint_path, save_freq, plot_name)
