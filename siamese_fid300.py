@@ -19,7 +19,9 @@ cuda = torch.cuda.is_available()
 def extract_embeddings(dataloader, model, if_probe=False):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 128))
+        embeddings = np.zeros((len(dataloader.dataset), 128)) # for fc layer
+        # embeddings = np.zeros((len(dataloader.dataset), 256)) # for avgpooling, layer5
+        # embeddings = np.zeros((len(dataloader.dataset), 512)) # for avgpooling, layer6
         if if_probe:
           labels = np.zeros(len(dataloader.dataset))
           k = 0
@@ -49,9 +51,8 @@ def get_transforms(mean, std, transform_method=1, transform_size=(224, 112)):
     if(transform_method == 1):
         transform_val = transforms.Compose([transforms.Resize(transform_size), transforms.ToTensor(), 
                     transforms.Normalize(mean, std)])
-        transform_train = transforms.Compose([transforms.Resize(transform_size), transforms.RandomHorizontalFlip(),
-                        transforms.ToTensor(),
-                        transforms.Normalize(mean, std)])
+        transform_train = transforms.Compose([transforms.Resize(transform_size), 
+                        transforms.ToTensor(), transforms.Normalize(mean, std)]) # transforms.RandomHorizontalFlip(),
         return transform_val, transform_train, transform_train
     else:
         transform_val = transforms.Compose([transforms.Resize(x), transforms.ToTensor(), transforms.Normalize(mean, std)])
@@ -93,29 +94,28 @@ if __name__ == "__main__":
     triplet_val_loader = torch.utils.data.DataLoader(triplet_val_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
     
-    margin = 0.3 #1
+    margin = 0.3
     # layer_id = 6
     # embedding_net = EmbeddingNet_ResNet18(layer_id)
-    layer_id = 5
+    layer_id = 7 #5
     network_name='resnet50'
     # network_name='vgg19'
-    embedding_net = EmbeddingNet(network_name=network_name, layer_id=5)
+    embedding_net = EmbeddingNet(network_name=network_name, layer_id=layer_id)
     model = TripletNet(embedding_net)
     if cuda:
         model.cuda()
     loss_fn = TripletLoss(margin)
-    lr = 1e-3
+    lr = 5e-4
     optimizer = optim.Adam(model.parameters(), lr=lr)
+
     # optimizer = optim.Adam([
     #             {'params': model.embedding_net.net_base.parameters()},
     #             {'params': model.embedding_net.fc.parameters(), 'lr': lr*10}
     #         ], lr=lr)
-    # optimizer = optim.SGD([
-    #             {'params': model.embedding_net.net_base.parameters()},
-    #             {'params': model.embedding_net.fc.parameters(), 'lr': lr*10}
-    #         ], lr=lr, momentum=0.9)
+    # lr = 1e-5
+    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     
-    scheduler = lr_scheduler.StepLR(optimizer, 10, gamma=0.1, last_epoch=-1)
+    scheduler = lr_scheduler.StepLR(optimizer, 30, gamma=0.1, last_epoch=-1)
     n_epochs = 100
     log_interval = 100
     checkpoint_path = "../checkpoints_resnet50/"
