@@ -12,8 +12,10 @@ class EmbeddingNet_ResNet18(nn.Module):
         self.resnet_base = nn.Sequential(*modules)
         if(layer_id == 6):
             self.fc = nn.Linear(128*28*14, 128)
+            nn.init.xavier_uniform(self.fc.weight)
         elif(layer_id == 7):
             self.fc = nn.Linear(256*14*7, 128)
+            nn.init.xavier_uniform(self.fc.weight)
 
         # modules = list(resnet18.children())[:8] 
         # self.resnet_base = nn.Sequential(*modules)
@@ -61,11 +63,22 @@ class EmbeddingNet(nn.Module):
             modules = list(model.children())[:layer_id] 
             self.net_base = nn.Sequential(*modules)
             if(layer_id == 5):
-                # self.fc = nn.Linear(256*56*28*2, 128)
+                # self.fc = nn.Linear(256*56*56, 128)
+                
                 self.fc = nn.Linear(256*56*28, 128)
+                # nn.init.xavier_uniform(self.fc.weight)
+                # pass
                 # self.fc = nn.Sequential(nn.Linear(256*56*28, 1024),
                 #                     nn.ReLU(),
                 #                     nn.Linear(1024, 128))
+            elif(layer_id == 6):
+                # pass
+                self.fc = nn.Linear(512*28*14, 128)
+                nn.init.xavier_uniform(self.fc.weight)
+            elif(layer_id == 7):
+                # pass
+                self.fc = nn.Linear(1024*14*7, 128)
+                nn.init.xavier_uniform(self.fc.weight)
             else:
                 print("layer_id not supported")
                 exit()
@@ -85,7 +98,7 @@ class EmbeddingNet(nn.Module):
             #                        nn.Linear(1024, 128))
 
         for param in self.net_base.parameters():
-            param.requires_grad = False
+            param.requires_grad = True #False
         for param in self.fc.parameters():
             param.requires_grad = True
 

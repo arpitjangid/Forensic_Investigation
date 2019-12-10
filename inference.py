@@ -20,8 +20,8 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transfo
         model = TripletNet(EmbeddingNet_ResNet18(layer_id))
     else:
         model = TripletNet(EmbeddingNet(network_name, layer_id))
-    # model.load_state_dict(checkpoint['model_state_dict'])
-    # model.eval()
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
     if cuda:
         model.cuda()
     batch_size = 32
@@ -120,7 +120,8 @@ def find_scores(ref_vec_list, test_vec_list, label_table, divided=False):
     retreival_10_inds = np.where(pos_array < thresh)[0]
     # print("score_sort ", score_sort.shape)
     score_10 = score_sort[retreival_10_inds][:,:int(thresh)]
-    gts_correct = label_table[retreival_5_inds][1]
+    gts_correct = label_table[retreival_10_inds] #[1]
+    print("retreival_10_inds",retreival_10_inds.shape)
     score_10 = np.insert(score_10, 0, gts_correct, axis=1)# now first element is gt 
 
     # print("score_10 ", score_10.shape)
@@ -169,12 +170,12 @@ if __name__ == "__main__":
         transform_size=(224, 112)
 
     network_name = "resnet50"
-    layer_id = 5
+    layer_id = 7 #5
     checkpoint_path = "../checkpoints_resnet50/"
     # network_name = "resnet18"
     # layer_id = 6
     # checkpoint_path = "../checkpoints_resnet18/"
-    epoch = 20
+    epoch = 10
     
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     
@@ -183,8 +184,6 @@ if __name__ == "__main__":
     val_embeddings, val_labels = val_embeddings # dataloader is handling index 
     train_embeddings, train_labels = train_embeddings
 
-    # print("train_labels = {}".format(train_labels))
-
     print("training data results:")
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
         train_embeddings, train_labels, divided=args.divided)
@@ -192,9 +191,9 @@ if __name__ == "__main__":
     # label_fname = 'label_table_train.csv'
     # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'train')
     
-    print("validation data results:")
-    retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
-        val_embeddings, val_labels, divided=args.divided)
+    # print("validation data results:")
+    # retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
+    #     val_embeddings, val_labels, divided=args.divided)
     
     # label_fname = 'label_table_val.csv'
     # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'val')

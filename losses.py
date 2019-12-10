@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torch.autograd import Variable
 
 class ContrastiveLoss(nn.Module):
     """
@@ -43,7 +43,10 @@ class TripletLoss(nn.Module):
         if not self.ncc:
             distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
             distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
-            losses = F.relu(distance_positive - distance_negative + self.margin)
+            # losses = F.relu(distance_positive - distance_negative + self.margin)
+            ranking_loss = nn.MarginRankingLoss(margin=self.margin)
+            y = Variable(distance_negative.data.new().resize_as_(distance_negative.data).fill_(1))
+            losses = ranking_loss(distance_negative, distance_positive, y)
             return losses.mean() if size_average else losses.sum()
         else:
             loss = self.mcncc(anchor, negative) - self.mcncc(anchor, positive) + self.margin
