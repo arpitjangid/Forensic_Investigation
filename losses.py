@@ -28,11 +28,12 @@ class TripletLoss(nn.Module):
     """
 
     def mcncc(self, v1, v2):
-            den = v1.norm(axis=1)*v2.norm(axis=1) + 1e-12
-            num = (v1*v2).sum(axis=1)
-            ncc = den/num
-            ncc_sum = ncc.sum()
-            return ncc_sum
+        batch_size = v1.shape[0]
+        den = torch.norm(v1, dim=2)*torch.norm(v2, dim=2) + 1e-12
+        num = (v1*v2).sum(dim=2)
+        ncc = num/den
+        ncc_mean = ncc.mean(dim=1)
+        return ncc_mean
 
     def __init__(self, margin, ncc=False):
         super(TripletLoss, self).__init__()
@@ -49,9 +50,15 @@ class TripletLoss(nn.Module):
             losses = ranking_loss(distance_negative, distance_positive, y)
             return losses.mean() if size_average else losses.sum()
         else:
-            print("anchor.shape {}".format(anchor.shape))
-            loss = self.mcncc(anchor, negative) - self.mcncc(anchor, positive) + self.margin
-            return loss
+            # print("anchor.shape {}".format(anchor.shape))
+            anchor_reshape = anchor.reshape(anchor.shape[0], anchor.shape[1], anchor.shape[2]*anchor.shape[3])
+            negative_reshape = negative.reshape(negative.shape[0], negative.shape[1], negative.shape[2]*negative.shape[3])
+            positive_reshape = positive.reshape(positive.shape[0], positive.shape[1], positive.shape[2]*positive.shape[3])
+            # print("self.mcncc(anchor_reshape, negative_reshape) = {}".format(self.mcncc(anchor_reshape, negative_reshape)))
+            losses =  self.mcncc(anchor_reshape, negative_reshape) \
+                - self.mcncc(anchor_reshape, positive_reshape) + self.margin
+            losses_relu = F.relu(losses)
+            return losses_relu.mean()
 
 class OnlineContrastiveLoss(nn.Module):
     """

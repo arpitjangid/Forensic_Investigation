@@ -19,7 +19,7 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transfo
     if(network_name == "resnet18"):
         model = TripletNet(EmbeddingNet_ResNet18(layer_id))
     else:
-        model = TripletNet(EmbeddingNet(network_name, layer_id))
+        model = TripletNet(EmbeddingNet(network_name, layer_id, ncc=ncc))
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
@@ -43,6 +43,8 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transfo
     val_probe_loader = torch.utils.data.DataLoader(val_probe_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
     ref_loader = torch.utils.data.DataLoader(ref_dataset, batch_size=batch_size, shuffle=False, **kwargs)
+
+    print("in get_feature_vecs ncc = {}".format(ncc))
 
     train_embeddings_probe  = extract_embeddings(train_probe_loader, model, if_probe=True, ncc=ncc)
     val_embeddings_probe  = extract_embeddings(val_probe_loader, model, if_probe=True, ncc=ncc)
@@ -80,12 +82,19 @@ def get_scoresort_divided(l2_dist_vec):
     return score_sort, label_table
 
 
+# def mcncc(v1, v2):
+#         den = np.linalg.norm(v1, axis=1)*np.linalg.norm(v2, axis=1) + 1e-12
+#         num = (v1*v2).sum(axis=1)
+#         ncc = den/num
+#         ncc_sum = ncc.sum()
+#         return ncc_sum
+
 def mcncc(v1, v2):
-        den = np.linalg.norm(v1, axis=1)*np.linalg.norm(v2, axis=1) + 1e-12
-        num = (v1*v2).sum(axis=1)
-        ncc = den/num
-        ncc_sum = ncc.sum()
-        return ncc_sum
+    den = np.linalg.norm(v1, axis=1)*np.linalg.norm(v2, axis=1) + 1e-12
+    num = (v1*v2).sum(axis=1)
+    ncc = num/den
+    ncc_mean = ncc.mean()
+    return ncc_mean
 
 def find_scores(ref_vec_list, test_vec_list, label_table, divided=False, ncc=False):
     if not ncc:
@@ -100,6 +109,7 @@ def find_scores(ref_vec_list, test_vec_list, label_table, divided=False, ncc=Fal
             print(i)
             for j, v2 in enumerate(ref_vec_list):
                 l2_dist_vec[i, j] = mcncc(v1, v2)
+        l2_dist_vec = -l2_dist_vec
 
     if divided:
         score_sort, label_table = get_scoresort_divided(l2_dist_vec)

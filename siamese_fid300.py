@@ -21,14 +21,18 @@ def extract_embeddings(dataloader, model, if_probe=False, ncc=False):
         model.eval()
         if not ncc:
             embeddings = np.zeros((len(dataloader.dataset), 128))
+            # print("offo")
         else:
-            embeddings = np.zeros((len(dataloader.dataset), 256,56,28))
+            embeddings = np.zeros((len(dataloader.dataset), 1024,14,7))
+            # print("interesting")
         if if_probe:
           labels = np.zeros(len(dataloader.dataset))
           k = 0
           for images, target in dataloader:
               if cuda:
                   images = images.cuda()
+            #   print("model.get_embedding(images).data.shape = {}".format(model.get_embedding(images).data.shape))
+            #   print("embeddings[k:k+len(images)].shape = {}".format(embeddings[k:k+len(images)].shape))
               embeddings[k:k+len(images)] = model.get_embedding(images).data.cpu().numpy() 
               labels[k:k+len(images)] = target.numpy()
               k += len(images)
@@ -102,7 +106,7 @@ if __name__ == "__main__":
     layer_id = 7 #5
     network_name='resnet50'
     # network_name='vgg19'
-    
+
     embedding_net = EmbeddingNet(network_name=network_name, layer_id=layer_id, ncc=args.ncc)
     model = TripletNet(embedding_net)
     if cuda:
