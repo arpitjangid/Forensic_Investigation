@@ -51,8 +51,9 @@ class EmbeddingNet_ResNet18(nn.Module):
         return self.forward(x)
 
 class EmbeddingNet(nn.Module):
-    def __init__(self, network_name='resnet50', layer_id=5):
+    def __init__(self, network_name='resnet50', layer_id=5, ncc=False):
         super(EmbeddingNet, self).__init__()
+        self.ncc = ncc
         # self.resnet_base = models.resnet50(pretrained=True)
         # self.resnet_base.fc = nn.Linear(512, 128)
         if(network_name == "resnet50"):
@@ -91,7 +92,8 @@ class EmbeddingNet(nn.Module):
     def forward(self, x):
         # output = self.resnet_base(x)
         x = self.net_base(x)
-        x = x.view(x.size(0), -1)
+        if not self.ncc:
+            x = x.view(x.size(0), -1)
         output = self.fc(x)
         return output
 

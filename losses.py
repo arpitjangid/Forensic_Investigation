@@ -27,16 +27,27 @@ class TripletLoss(nn.Module):
     Takes embeddings of an anchor sample, a positive sample and a negative sample
     """
 
-    def __init__(self, margin):
+    def mcncc(self, v1, v2):
+            den = v1.norm(axis=1)*v2.norm(axis=1) + 1e-12
+            num = (v1*v2).sum(axis=1)
+            ncc = den/num
+            ncc_sum = ncc.sum()
+            return ncc_sum
+
+    def __init__(self, margin, ncc=False):
         super(TripletLoss, self).__init__()
+        self.ncc = ncc
         self.margin = margin
 
     def forward(self, anchor, positive, negative, size_average=True):
-        distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
-        distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
-        losses = F.relu(distance_positive - distance_negative + self.margin)
-        return losses.mean() if size_average else losses.sum()
-
+        if not self.ncc:
+            distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
+            distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
+            losses = F.relu(distance_positive - distance_negative + self.margin)
+            return losses.mean() if size_average else losses.sum()
+        else:
+            loss = self.mcncc(anchor, negative) - self.mcncc(anchor, positive) + self.margin
+            return loss
 
 class OnlineContrastiveLoss(nn.Module):
     """
