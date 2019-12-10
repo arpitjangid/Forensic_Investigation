@@ -103,8 +103,12 @@ class EmbeddingNet(nn.Module):
             param.requires_grad = True #False
         for param in self.fc.parameters():
             param.requires_grad = True
+        
         for param in self.net_base[-1][-1].parameters():
             param.requires_grad = True
+        
+        # for layer in list(self.net_base[-1][-1].children())[-3:-1]:
+        #     layer.weight.requires_grad = True
 
     def forward(self, x):
         # output = self.resnet_base(x)

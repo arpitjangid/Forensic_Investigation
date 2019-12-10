@@ -113,6 +113,7 @@ if __name__ == "__main__":
         model.cuda()
     loss_fn = TripletLoss(margin, ncc=args.ncc)
     lr = 5e-4
+    # optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.9)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # optimizer = optim.Adam([
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     
     scheduler = lr_scheduler.StepLR(optimizer, 30, gamma=0.1, last_epoch=-1)
-    n_epochs = 100
+    n_epochs = 200
     log_interval = 100
     checkpoint_path = "../checkpoints_resnet50/"
     # checkpoint_path = "../checkpoints_vgg19/"
@@ -134,7 +135,7 @@ if __name__ == "__main__":
     # plot_name = "../loss_curves/loss_vgg19.png"
 
     ### if(resume_tranining):
-    # checkpoint = torch.load(checkpoint_path+"epoch_20.pt")
+    # checkpoint = torch.load(checkpoint_path+"epoch_90.pt")
     # model.load_state_dict(checkpoint['model_state_dict'])
     #checkpoint = torch.load(checkpoint_path+"epoch_20.pt")
     #model.load_state_dict(checkpoint['model_state_dict'])
