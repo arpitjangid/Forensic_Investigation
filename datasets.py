@@ -25,32 +25,32 @@ class TripletFID(Dataset):
         self.num_reference = self.fid_dataset.num_reference
         self.reference_filenames = self.fid_dataset.reference_filenames
         self.labels = self.fid_dataset.labels
+        self.labels_set = set(self.labels)
         self.probe_images = self.fid_dataset.probe_images
         self.reference_images = self.fid_dataset.reference_images
         
-        if self.train:
-            random_state = np.random.RandomState()
-        else:
+        if not self.train:
             random_state = np.random.RandomState(29)
-        # probe, positive, negative
+            triplets = []
+            for i in range(len(self.probe_images)):
+                positive_ind = self.labels[i].item()
+                negative_ind = np.random.choice(list(self.labels_set - set([self.labels[i].item()])))
+                triplet = [i, positive_ind, negative_ind]
+                triplets.append(triplet)
+            self.triplets = triplets
             
-        triplets = []
-        for i in range(len(self.probe_images)):
-            positive_ind = self.labels[i].item()
-            # negative_ind = i
-            # while(negative_ind != i):
-            negative_ind = self.labels[i].item() #i #  initializing with pos_ind
-            while(negative_ind == positive_ind):
-                negative_ind = random_state.randint(self.num_reference)
-            triplet = [i, positive_ind, negative_ind]
-            triplets.append(triplet)
-        self.triplets = triplets
-        
 
     def __getitem__(self, index):
-        img1 = self.probe_images[self.triplets[index][0]] # anchor
-        img2 = self.reference_images[self.triplets[index][1]] # positive
-        img3 = self.reference_images[self.triplets[index][2]] #negative
+        if self.train:
+            img1, label1 = self.probe_images[index], self.labels[index].item()
+            positive_index = label1
+            negative_index = np.random.choice(list(self.labels_set - set([label1])))
+            img2 = self.reference_images[positive_index]
+            img3 = self.reference_images[negative_index]
+        else:
+            img1 = self.probe_images[self.triplets[index][0]] # anchor
+            img2 = self.reference_images[self.triplets[index][1]] # positive
+            img3 = self.reference_images[self.triplets[index][2]] #negative
 
         img1 = Image.fromarray(np.array(img1), mode='RGB')
         img2 = Image.fromarray(np.array(img2), mode='RGB')
@@ -65,7 +65,6 @@ class TripletFID(Dataset):
     def __len__(self):
         return len(self.fid_dataset)
 
-
 class FID300(Dataset):
     """
     A customized data loader for FID300
@@ -73,13 +72,15 @@ class FID300(Dataset):
     def __init__(self,
                  root,
                  transform=None,
-                 train = True, get_probe = True, with_aug = False):#,preload=False):
+                 train = True, get_probe = True, with_aug = False):
         """ Intialize the FID300 dataset
         
         Args:
             - root: root directory of the dataset
             - tranform: a custom tranform function
             - preload: if preload the dataset into memory
+            - train: if dataset split is train
+            - get_probe: for when probe images to be loaded
         """
         self.probe_images = None
         self.reference_images = None
@@ -87,12 +88,11 @@ class FID300(Dataset):
         self.reference_filenames = []
         self.probe_filenames = []
         self.root = root
-        # self.transform = transform
         self.train = train # train set or test set
         if self.train:
             self.transform_ref = transform[0]
             self.transform_probe = transform[1]
-        else:
+        else: # for val or test split, same transform for ref and probe
             self.transform_ref = transform
             self.transform_probe = transform
         
@@ -105,22 +105,25 @@ class FID300(Dataset):
         self.reference_filenames = [os.path.join(ref_dir,ref_file) for ref_file in ref_filenames]
         self.num_reference = len(ref_filenames)
         if(self.train):
-            if(with_aug):
-                probe_dir = os.path.join(root,"tracks_cropped_train_aug")
-                label_file = os.path.join(root,'label_table_train_aug.csv')
-            else:
-                probe_dir = os.path.join(root,"tracks_cropped_train")
-                label_file = os.path.join(root,'label_table_train.csv')
+            # if(with_aug):
+            #     probe_dir = os.path.join(root,"tracks_cropped_train_aug")
+            #     label_file = os.path.join(root,'label_table_train_aug.csv')
+            # else:
+            probe_dir = os.path.join(root,"tracks_cropped_train")
+            label_file = os.path.join(root,'label_table_train.csv')
         else:
             probe_dir = os.path.join(root,"tracks_cropped_val")
             label_file = os.path.join(root,'label_table_val.csv')
         probe_flist = os.listdir(probe_dir)
         probe_flist.sort()
+        # if not self.train:
+        #     for i in range(len(probe_flist)):
+        #         print(i,probe_flist[i])
         probe_flist = [os.path.join(probe_dir, probe_file) for probe_file in probe_flist]
 
         label_map = np.loadtxt(label_file, delimiter=',', dtype='int')
         label_map[:,1] -= 1 # making the map to range [0,1174], 
-        
+        # print("probe_flist: {},label_map: {} ".format(len(probe_flist),len(label_map)))
         # probe_flist is in sorted order
         for i in range(len(probe_flist)):
             self.probe_filenames.append((probe_flist[i],label_map[i,1])) # filename and ref file_id pair
@@ -173,27 +176,7 @@ class FID300(Dataset):
             if self.transform_ref is not None:
                 ref_image = self.transform_ref(ref_image)
             # return image and label
-            return ref_image
-        
-            
-        # else:
-        #     # If on-demand data loading
-        #     image_fn, label = self.probe_filenames[index]
-        #     ref_image_fn = self.reference_filenames[label-1]
-        #     image = Image.open(image_fn)
-        #     ref_image = Image.open(ref_image_fn)
-            
-        # May use transform function to transform samples
-        # e.g., random crop, whitening
-
-        # if(~self.get_probe and ~self.get_ref):
-
-        #     if self.transform is not None:
-        #         image = self.transform(image)
-        #         ref_image = self.transform(ref_image)
-        #     # return image, ref_image and label
-        #     return image, ref_image, label
-        
+            return ref_image    
 
     def __len__(self):
         """

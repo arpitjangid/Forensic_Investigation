@@ -19,8 +19,8 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id):
         model = TripletNet(EmbeddingNet_ResNet18(layer_id))
     else:
         model = TripletNet(EmbeddingNet(network_name, layer_id))
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model.eval()
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    # model.eval()
     if cuda:
         model.cuda()
     batch_size = 32
@@ -109,16 +109,7 @@ def save_results(data_path, label_fname, scores, reference_embeddings, retreival
     pass
 
 if __name__ == "__main__":
-    # data_path = "../data/FID-300/"
-
-    # network_name = "resnet50"
-    # layer_id = 5
-    # checkpoint_path = "../checkpoints_resnet50_labelfix/" 
-    # # checkpoint_path = "../checkpoints_resnet50/"
-    # # network_name = "resnet18"
-    # # layer_id = 6
-    # # checkpoint_path = "../checkpoints_resnet18/"
-    # epoch = 50
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--divided', dest='divided', action='store_true')
     args = parser.parse_args()
@@ -129,15 +120,12 @@ if __name__ == "__main__":
 
     network_name = "resnet50"
     layer_id = 5
-    checkpoint_path = "../checkpoints_full_resnet50/"
+    checkpoint_path = "../checkpoints_resnet50/"
     # network_name = "resnet18"
     # layer_id = 6
     # checkpoint_path = "../checkpoints_resnet18/"
-    epoch = 40
-    
+    epoch = 90
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
-    # checkpoint_file = "../checkpoints_fulltrain_layer7/resnet_18_epoch_{}.pt".format(epoch)
-    # checkpoint_file = "../checkpoints/resnet_18_epoch_{}.pt".format(epoch)
     
     reference_embeddings, val_embeddings, train_embeddings = get_feature_vecs(data_path, checkpoint_file,
                                                             network_name, layer_id)
