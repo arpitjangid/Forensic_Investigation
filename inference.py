@@ -14,7 +14,7 @@ cuda = torch.cuda.is_available()
 #data_path = r"/content/drive/My Drive/701_project/FID-300/"
 
 
-def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transform_size=(224,112)):
+def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transform_size=(224,112), ncc=False):
     checkpoint = torch.load(checkpoint_path)
     if(network_name == "resnet18"):
         model = TripletNet(EmbeddingNet_ResNet18(layer_id))
@@ -22,6 +22,7 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transfo
         model = TripletNet(EmbeddingNet(network_name, layer_id))
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+
     if cuda:
         model.cuda()
     batch_size = 32
@@ -43,9 +44,9 @@ def get_feature_vecs(data_path, checkpoint_path, network_name, layer_id, transfo
 
     ref_loader = torch.utils.data.DataLoader(ref_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
-    train_embeddings_probe  = extract_embeddings(train_probe_loader, model, if_probe=True)
-    val_embeddings_probe  = extract_embeddings(val_probe_loader, model, if_probe=True)
-    ref_embeddings = extract_embeddings(ref_loader, model, if_probe= False)
+    train_embeddings_probe  = extract_embeddings(train_probe_loader, model, if_probe=True, ncc=ncc)
+    val_embeddings_probe  = extract_embeddings(val_probe_loader, model, if_probe=True, ncc=ncc)
+    ref_embeddings = extract_embeddings(ref_loader, model, if_probe= False, ncc=ncc)
     return ref_embeddings, val_embeddings_probe, train_embeddings_probe
 
 def get_scoresort_divided(l2_dist_vec):
@@ -79,12 +80,27 @@ def get_scoresort_divided(l2_dist_vec):
     return score_sort, label_table
 
 
-def find_scores(ref_vec_list, test_vec_list, label_table, divided=False):
-    l2_dist_vec = [] # list of l2_distance for each test image
-    for test_vec in test_vec_list:
-        dist_from_ref = np.linalg.norm(ref_vec_list-test_vec, axis=1)**2 # as in loss, using sq distance
-        l2_dist_vec.append(dist_from_ref)
-    l2_dist_vec = np.stack(l2_dist_vec)
+def mcncc(v1, v2):
+        den = np.linalg.norm(v1, axis=1)*np.linalg.norm(v2, axis=1) + 1e-12
+        num = (v1*v2).sum(axis=1)
+        ncc = den/num
+        ncc_sum = ncc.sum()
+        return ncc_sum
+
+def find_scores(ref_vec_list, test_vec_list, label_table, divided=False, ncc=False):
+    if not ncc:
+        l2_dist_vec = [] # list of l2_distance for each test image
+        for test_vec in test_vec_list:
+            dist_from_ref = np.linalg.norm(ref_vec_list-test_vec, axis=1)**2 # as in loss, using sq distance
+            l2_dist_vec.append(dist_from_ref)
+        l2_dist_vec = np.stack(l2_dist_vec)
+    else:
+        l2_dist_vec = np.zeros((test_vec_list.shape[0], ref_vec_list.shape[0]))
+        for i, v1 in enumerate(test_vec_list):
+            print(i)
+            for j, v2 in enumerate(ref_vec_list):
+                l2_dist_vec[i, j] = mcncc(v1, v2)
+
     if divided:
         score_sort, label_table = get_scoresort_divided(l2_dist_vec)
     else:
@@ -161,6 +177,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--divided', dest='divided', action='store_true')
+    parser.add_argument('--ncc', dest='ncc', action='store_true')
     args = parser.parse_args()
     if args.divided:
         data_path = "../data/FID-300/divided"
@@ -170,30 +187,32 @@ if __name__ == "__main__":
         transform_size=(224, 112)
 
     network_name = "resnet50"
+    
     layer_id = 7 #5
     checkpoint_path = "../checkpoints_resnet50/"
     # network_name = "resnet18"
     # layer_id = 6
     # checkpoint_path = "../checkpoints_resnet18/"
-    epoch = 10
-    
+    epoch = 50
+
     checkpoint_file = os.path.join(checkpoint_path, "epoch_{}.pt".format(epoch))
     
     reference_embeddings, val_embeddings, train_embeddings = get_feature_vecs(data_path, checkpoint_file,
-                                                            network_name, layer_id, transform_size=transform_size)
+                                                            network_name, layer_id, transform_size=transform_size,
+                                                            ncc=args.ncc)
     val_embeddings, val_labels = val_embeddings # dataloader is handling index 
     train_embeddings, train_labels = train_embeddings
 
     print("training data results:")
     retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
-        train_embeddings, train_labels, divided=args.divided)
+        train_embeddings, train_labels, divided=args.divided, ncc=args.ncc)
     
     # label_fname = 'label_table_train.csv'
     # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'train')
     
-    # print("validation data results:")
-    # retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
-    #     val_embeddings, val_labels, divided=args.divided)
+    print("validation data results:")
+    retreival_5_inds, retreival_10_inds, scores = find_scores(reference_embeddings,
+        val_embeddings, val_labels, divided=args.divided, ncc=args.ncc)
     
     # label_fname = 'label_table_val.csv'
     # save_results(data_path, label_fname, scores, reference_embeddings, retreival_5_inds, retreival_10_inds, network_name, epoch, 'val')

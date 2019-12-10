@@ -49,6 +49,7 @@ class TripletLoss(nn.Module):
             losses = ranking_loss(distance_negative, distance_positive, y)
             return losses.mean() if size_average else losses.sum()
         else:
+            print("anchor.shape {}".format(anchor.shape))
             loss = self.mcncc(anchor, negative) - self.mcncc(anchor, positive) + self.margin
             return loss
 

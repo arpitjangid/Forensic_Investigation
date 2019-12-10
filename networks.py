@@ -59,15 +59,17 @@ class EmbeddingNet(nn.Module):
         # self.resnet_base = models.resnet50(pretrained=True)
         # self.resnet_base.fc = nn.Linear(512, 128)
         if(network_name == "resnet50"):
+            # print("layer_id = {}".format(layer_id))
             model = models.resnet50(pretrained=True)
             modules = list(model.children())[:layer_id] 
             self.net_base = nn.Sequential(*modules)
+            # print("layer_id = {}".format(layer_id))
             if(layer_id == 5):
-                # self.fc = nn.Linear(256*56*56, 128)
-                
                 self.fc = nn.Linear(256*56*28, 128)
-                # nn.init.xavier_uniform(self.fc.weight)
-                # pass
+            elif(layer_id == 6):
+                self.fc = nn.Linear(512*28*14, 128)
+            elif(layer_id == 7):
+                self.fc = nn.Linear(1024*14*7, 128)
                 # self.fc = nn.Sequential(nn.Linear(256*56*28, 1024),
                 #                     nn.ReLU(),
                 #                     nn.Linear(1024, 128))
@@ -101,13 +103,17 @@ class EmbeddingNet(nn.Module):
             param.requires_grad = True #False
         for param in self.fc.parameters():
             param.requires_grad = True
+        for param in self.net_base[-1][-1].parameters():
+            param.requires_grad = True
 
     def forward(self, x):
         # output = self.resnet_base(x)
         x = self.net_base(x)
         if not self.ncc:
             x = x.view(x.size(0), -1)
-        output = self.fc(x)
+            output = self.fc(x)
+        else:
+            output = x
         return output
 
     def get_embedding(self, x):

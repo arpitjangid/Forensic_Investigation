@@ -169,6 +169,7 @@ if __name__ == "__main__":
 
     network_name = "resnet50"
     layer_id = 5
+    # layer_id = 7
     checkpoint_path = "../checkpoints_full_resnet50/"
     # network_name = "resnet18"
     # layer_id = 6

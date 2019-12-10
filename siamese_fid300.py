@@ -16,12 +16,13 @@ import argparse
 
 cuda = torch.cuda.is_available()
 
-def extract_embeddings(dataloader, model, if_probe=False):
+def extract_embeddings(dataloader, model, if_probe=False, ncc=False):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 128)) # for fc layer
-        # embeddings = np.zeros((len(dataloader.dataset), 256)) # for avgpooling, layer5
-        # embeddings = np.zeros((len(dataloader.dataset), 512)) # for avgpooling, layer6
+        if not ncc:
+            embeddings = np.zeros((len(dataloader.dataset), 128))
+        else:
+            embeddings = np.zeros((len(dataloader.dataset), 256,56,28))
         if if_probe:
           labels = np.zeros(len(dataloader.dataset))
           k = 0
@@ -66,6 +67,7 @@ def get_transforms(mean, std, transform_method=1, transform_size=(224, 112)):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--divided', dest='divided', action='store_true')
+    parser.add_argument('--ncc', dest='ncc', action='store_true')
     args = parser.parse_args()
 
     if args.divided:
@@ -100,11 +102,12 @@ if __name__ == "__main__":
     layer_id = 7 #5
     network_name='resnet50'
     # network_name='vgg19'
-    embedding_net = EmbeddingNet(network_name=network_name, layer_id=layer_id)
+    
+    embedding_net = EmbeddingNet(network_name=network_name, layer_id=layer_id, ncc=args.ncc)
     model = TripletNet(embedding_net)
     if cuda:
         model.cuda()
-    loss_fn = TripletLoss(margin)
+    loss_fn = TripletLoss(margin, ncc=args.ncc)
     lr = 5e-4
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
